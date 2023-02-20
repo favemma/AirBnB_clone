@@ -8,6 +8,7 @@ from models.user import User
 from models.place import Place
 from models.state import State
 from models.review import Review
+from models.engine.error import *
 from models.amenity import Amenity
 from models.base_model import BaseModel
 
@@ -133,46 +134,54 @@ class HBNBCommand(Cmd):
         $ update Model id field value
         Print errors for missing arguments
         '''
-        if '{' in arg:
+        if '{' in arg and '}' in arg:
             od_str = '{'
             ods = arg.split('{')
             od_str += ods[1]
             args, n = parse(ods[0], ',')
             args.append(od_str)
-            try:
-                storage.edit_by_dict(*args[0:3])
-                return
-            except ModelNotFoundError:
-                print("** class doesn't exist **")
-            except InstanceNotFoundError:
-                print("** no instance found **")
-
-        args, n = parse(arg, ',')
-        if not n:
-            print("** class name missing **")
-        elif n == 1:
-            print("** instance id missing **")
-        elif n == 2:
-            print("** attribute name missing **")
-        elif n == 3:
-            print("** value missing **")
+            if not n:
+                print("** class name missing **")
+            elif n == 1:
+                print("** instance id missing **")
+            else:
+                try:
+                    storage.edit_by_dict(*args[0:3])
+                except ModelNotFoundError:
+                    print("** class doesn't exist **")
+                except InstanceNotFoundError:
+                    print("** no instance found **")
         else:
-            try:
-                storage.edit_one(*args[0:4])
-            except ModelNotFoundError:
-                print("** class doesn't exist **")
-            except InstanceNotFoundError:
-                print("** no instance found **")
+            args, n = parse(arg, ',')
+            if not n:
+                print("** class name missing **")
+            elif n == 1:
+                print("** instance id missing **")
+            elif n == 2:
+                print("** attribute name missing **")
+            elif n == 3:
+                print("** value missing **")
+            else:
+                try:
+                    storage.edit_one(*args[0:4])
+                except ModelNotFoundError:
+                    print("** class doesn't exist **")
+                except InstanceNotFoundError:
+                    print("** no instance found **")
 
     def do_count(self, cname):
         ''' Retreive the number of instances of a class '''
         count = 0
         objs_ = storage.all()
         for k, v in objs_.items():
-            c = k.split('.') # c: list with class name and id
+            c = k.split('.')
             if c[0] == cname:
                 count += 1
         print(count)
+
+    def help_help(self):
+        ''' Print help command description '''
+        print("Provides description of a given command")
 
 
 def parse(line, sep):
@@ -182,7 +191,7 @@ def parse(line, sep):
         for av in line.split(sep):
             a += av
         args = shlex.split(a)
-    else:
+    elif sep == ' ':
         args = line.split(sep)
     return args, len(args)
 
